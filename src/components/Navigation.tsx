@@ -2,9 +2,11 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Home, Sword, Calendar, Coins, User, Info, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFlowCurrentUser, Connect } from '@onflow/react-sdk';
 
 export const Navigation = () => {
   const location = useLocation();
+  const { user } = useFlowCurrentUser();
   
   const navItems = [
     { path: "/", icon: Home, label: "Feed" },
@@ -50,10 +52,16 @@ export const Navigation = () => {
             })}
           </div>
 
-          <Button className="bg-gradient-battle hover:opacity-90 transition-opacity shadow-glow">
-            <Wallet className="w-4 h-4 mr-2" />
-            Connect Wallet
-          </Button>
+          <div className="flow-connect-wrapper">
+            {user?.loggedIn ? (
+              <Button className="bg-black text-white hover:bg-black/90 transition-opacity shadow-glow">
+                <Wallet className="w-4 h-4 mr-2" />
+                {user.addr?.slice(0, 6)}...{user.addr?.slice(-4)}
+              </Button>
+            ) : (
+              <Connect />
+            )}
+          </div>
         </div>
 
         {/* Mobile Navigation */}

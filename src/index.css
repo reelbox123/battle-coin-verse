@@ -88,3 +88,14 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Flow Connect Button Styling */
+  .flow-connect-wrapper button {
+    @apply bg-black text-white hover:bg-black/90 transition-opacity shadow-glow h-10 px-4 py-2 rounded-md font-medium;
+  }
+  
+  .flow-connect-wrapper svg {
+    @apply w-4 h-4;
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "networks": {
+    "mainnet": "access-mainnet.onflow.org",
+    "testnet": "access-testnet.onflow.org"
+  },
+  "accounts": {
+    "default": {
+      "address": "0x0",
+      "keys": []
+    }
+  }
+}
