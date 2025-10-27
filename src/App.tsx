@@ -10,6 +10,7 @@ import Upcoming from "./pages/Upcoming";
 import Staking from "./pages/Staking";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Navigation />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
             <Route path="/battle" element={<Battle />} />
             <Route path="/upcoming" element={<Upcoming />} />
             <Route path="/staking" element={<Staking />} />

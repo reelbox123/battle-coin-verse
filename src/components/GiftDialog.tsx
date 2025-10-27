@@ -14,6 +14,8 @@ interface GiftDialogProps {
   onOpenChange: (open: boolean) => void;
   creatorName: string;
   onGiftSent?: () => void;
+  livestreamId?: string;
+  toCreatorId?: string | null;
 }
 
 const giftOptions = [
@@ -25,25 +27,79 @@ const giftOptions = [
   { id: 6, name: "Heart", icon: "❤️", cost: 50, effect: "pulse" },
 ];
 
-export const GiftDialog = ({ open, onOpenChange, creatorName, onGiftSent }: GiftDialogProps) => {
+export const GiftDialog = ({ open, onOpenChange, creatorName, onGiftSent, livestreamId, toCreatorId }: GiftDialogProps) => {
   const [selectedGift, setSelectedGift] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSendGift = (gift: typeof giftOptions[0]) => {
-    setSelectedGift(gift.id);
-    
-    // Trigger AR effect
-    if (onGiftSent) {
-      onGiftSent();
+  const handleSendGift = async (gift: typeof giftOptions[0]) => {
+    if (!livestreamId || !toCreatorId) {
+      // Mock behavior for non-livestream gifts
+      setSelectedGift(gift.id);
+      
+      if (onGiftSent) {
+        onGiftSent();
+      }
+
+      setTimeout(() => {
+        toast({
+          title: "Gift Sent! 🎁",
+          description: `You sent ${gift.name} ${gift.icon} to ${creatorName} (${gift.cost} DCoin)`,
+        });
+        setSelectedGift(null);
+        onOpenChange(false);
+      }, 300);
+      return;
     }
 
-    setTimeout(() => {
+    setLoading(true);
+    setSelectedGift(gift.id);
+
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      
+      const { data, error } = await supabase.functions.invoke('send-gift', {
+        body: {
+          livestream_id: livestreamId,
+          to_creator_id: toCreatorId,
+          amount: gift.cost,
+          gift_type: gift.name,
+        },
+      });
+
+      if (error) throw error;
+
       toast({
         title: "Gift Sent! 🎁",
         description: `You sent ${gift.name} ${gift.icon} to ${creatorName} (${gift.cost} DCoin)`,
       });
+
+      if (data?.milestone_reached) {
+        setTimeout(() => {
+          toast({
+            title: "Milestone Reached! 🏆",
+            description: `Round ${data.new_round - 1} complete! Starting Round ${data.new_round}`,
+          });
+        }, 1000);
+      }
+
+      if (onGiftSent) {
+        onGiftSent();
+      }
+
+      setTimeout(() => {
+        setSelectedGift(null);
+        onOpenChange(false);
+      }, 300);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send gift",
+        variant: "destructive",
+      });
       setSelectedGift(null);
-      onOpenChange(false);
-    }, 300);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -65,6 +121,7 @@ export const GiftDialog = ({ open, onOpenChange, creatorName, onGiftSent }: Gift
                 selectedGift === gift.id ? "border-primary bg-primary/10 scale-95" : ""
               }`}
               onClick={() => handleSendGift(gift)}
+              disabled={loading}
             >
               <span className="text-3xl">{gift.icon}</span>
               <div className="text-center">

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Video, Zap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GoLiveDialogProps {
   open: boolean;
@@ -20,8 +21,9 @@ interface GoLiveDialogProps {
 export const GoLiveDialog = ({ open, onOpenChange }: GoLiveDialogProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleGoLive = () => {
+  const handleGoLive = async () => {
     if (!title) {
       toast({
         title: "Missing Title",
@@ -31,14 +33,36 @@ export const GoLiveDialog = ({ open, onOpenChange }: GoLiveDialogProps) => {
       return;
     }
 
-    toast({
-      title: "Going Live! 🔴",
-      description: "Your livestream is starting...",
-    });
-    
-    setTitle("");
-    setDescription("");
-    onOpenChange(false);
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-livestream', {
+        body: {
+          title,
+          description,
+          collaborator_id: null,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Going Live! 🔴",
+        description: "Your livestream has started!",
+      });
+      
+      setTitle("");
+      setDescription("");
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start livestream",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -76,9 +100,10 @@ export const GoLiveDialog = ({ open, onOpenChange }: GoLiveDialogProps) => {
           <Button 
             className="w-full bg-gradient-to-r from-destructive to-primary hover:opacity-90"
             onClick={handleGoLive}
+            disabled={loading}
           >
             <Zap className="w-4 h-4 mr-2" />
-            Go Live Now
+            {loading ? "Starting..." : "Go Live Now"}
           </Button>
         </div>
       </DialogContent>

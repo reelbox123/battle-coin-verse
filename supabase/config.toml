@@ -1,1 +1,10 @@
 project_id = "xtzcumhuyxphesbjxjxn"
+
+[functions.create-livestream]
+verify_jwt = true
+
+[functions.send-gift]
+verify_jwt = true
+
+[functions.get-livestreams]
+verify_jwt = false

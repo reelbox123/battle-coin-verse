@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { VideoCard } from "@/components/VideoCard";
+import { LiveBattleCard } from "@/components/LiveBattleCard";
 import { Heart, MessageCircle, Share2, Flame } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const mockVideos = [
   {
@@ -40,20 +42,71 @@ const mockVideos = [
 
 const Index = () => {
   const [currentVideo, setCurrentVideo] = useState(0);
+  const [livestreams, setLivestreams] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadLivestreams();
+    
+    // Subscribe to livestream updates
+    const channel = supabase
+      .channel('livestreams')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'livestreams',
+        },
+        () => {
+          loadLivestreams();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const loadLivestreams = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-livestreams');
+      
+      if (error) throw error;
+      
+      setLivestreams(data?.livestreams || []);
+    } catch (error) {
+      console.error('Error loading livestreams:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Combine livestreams and regular videos
+  const allContent = [...livestreams, ...mockVideos];
 
   return (
     <div className="pt-16 md:pt-16 pb-20 md:pb-0">
       {/* Video Feed */}
       <div className="h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] snap-y snap-mandatory overflow-y-scroll scrollbar-hide">
-        {mockVideos.map((video, index) => (
-          <div
-            key={video.id}
-            className="h-full snap-start relative"
-            onScroll={() => setCurrentVideo(index)}
-          >
-            <VideoCard video={video} />
-          </div>
-        ))}
+        {allContent.map((item, index) => {
+          const isLivestream = 'status' in item;
+          
+          return (
+            <div
+              key={isLivestream ? `live-${item.id}` : `video-${item.id}`}
+              className="h-full snap-start relative"
+              onScroll={() => setCurrentVideo(index)}
+            >
+              {isLivestream ? (
+                <LiveBattleCard livestream={item} />
+              ) : (
+                <VideoCard video={item} />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Floating Action Hint */}
