@@ -14,7 +14,206 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      livestream_gifts: {
+        Row: {
+          amount: number
+          created_at: string
+          from_user_id: string
+          gift_type: string
+          id: string
+          livestream_id: string
+          round_id: string
+          to_creator_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          from_user_id: string
+          gift_type: string
+          id?: string
+          livestream_id: string
+          round_id: string
+          to_creator_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          from_user_id?: string
+          gift_type?: string
+          id?: string
+          livestream_id?: string
+          round_id?: string
+          to_creator_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "livestream_gifts_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "livestream_gifts_livestream_id_fkey"
+            columns: ["livestream_id"]
+            isOneToOne: false
+            referencedRelation: "livestreams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "livestream_gifts_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "livestream_rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "livestream_gifts_to_creator_id_fkey"
+            columns: ["to_creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      livestream_rounds: {
+        Row: {
+          collaborator_score: number
+          creator_score: number
+          ended_at: string | null
+          id: string
+          livestream_id: string
+          milestone: number
+          round_number: number
+          started_at: string
+          status: string
+          winner_id: string | null
+        }
+        Insert: {
+          collaborator_score?: number
+          creator_score?: number
+          ended_at?: string | null
+          id?: string
+          livestream_id: string
+          milestone?: number
+          round_number: number
+          started_at?: string
+          status?: string
+          winner_id?: string | null
+        }
+        Update: {
+          collaborator_score?: number
+          creator_score?: number
+          ended_at?: string | null
+          id?: string
+          livestream_id?: string
+          milestone?: number
+          round_number?: number
+          started_at?: string
+          status?: string
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "livestream_rounds_livestream_id_fkey"
+            columns: ["livestream_id"]
+            isOneToOne: false
+            referencedRelation: "livestreams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "livestream_rounds_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      livestreams: {
+        Row: {
+          collaborator_id: string | null
+          created_at: string
+          creator_id: string
+          current_round: number
+          description: string | null
+          ended_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          collaborator_id?: string | null
+          created_at?: string
+          creator_id: string
+          current_round?: number
+          description?: string | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          collaborator_id?: string | null
+          created_at?: string
+          creator_id?: string
+          current_round?: number
+          description?: string | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "livestreams_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "livestreams_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          dcoin_balance: number
+          id: string
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          dcoin_balance?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          dcoin_balance?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
