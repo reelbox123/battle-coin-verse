@@ -11,6 +11,7 @@ const mockVideos = [
     comments: "892",
     shares: "234",
     thumbnail: "https://images.unsplash.com/photo-1614294148960-9aa740632a87?w=400",
+    profilePic: "https://images.unsplash.com/photo-1614294148960-9aa740632a87?w=100",
   },
   {
     id: 2,
@@ -20,6 +21,7 @@ const mockVideos = [
     comments: "456",
     shares: "178",
     thumbnail: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400",
+    profilePic: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=100",
   },
   {
     id: 3,
@@ -29,6 +31,7 @@ const mockVideos = [
     comments: "1.2K",
     shares: "445",
     thumbnail: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400",
+    profilePic: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=100",
   },
 ];
 

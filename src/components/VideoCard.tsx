@@ -17,6 +17,7 @@ interface VideoCardProps {
     comments: string;
     shares: string;
     thumbnail: string;
+    profilePic: string;
   };
 }
 
@@ -62,7 +63,7 @@ export const VideoCard = ({ video }: VideoCardProps) => {
           poster={video.thumbnail}
           loop
           autoPlay
-          muted={!isPlaying}
+          muted
           playsInline
           onClick={() => setIsPlaying(!isPlaying)}
         >
@@ -89,6 +90,7 @@ export const VideoCard = ({ video }: VideoCardProps) => {
       <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white">
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="w-12 h-12 border-2 border-primary cursor-pointer hover:scale-105 transition-transform">
+            <img src={video.profilePic} alt={video.creator} className="w-full h-full object-cover" />
             <AvatarFallback className="bg-gradient-battle text-lg font-bold">
               {video.creator.slice(1, 3).toUpperCase()}
             </AvatarFallback>

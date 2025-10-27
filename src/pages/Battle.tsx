@@ -63,6 +63,7 @@ const Battle = () => {
               {/* Creator 1 */}
               <div className="flex items-center gap-4">
                 <Avatar className="w-16 h-16 border-2 border-primary">
+                  <img src={battle.creator1.image} alt={battle.creator1.name} className="w-full h-full object-cover" />
                   <AvatarFallback className="bg-gradient-battle text-lg">
                     {battle.creator1.avatar}
                   </AvatarFallback>
@@ -91,6 +92,7 @@ const Battle = () => {
               {/* Creator 2 */}
               <div className="flex items-center gap-4 md:flex-row-reverse">
                 <Avatar className="w-16 h-16 border-2 border-secondary">
+                  <img src={battle.creator2.image} alt={battle.creator2.name} className="w-full h-full object-cover" />
                   <AvatarFallback className="bg-gradient-to-br from-secondary to-accent text-lg">
                     {battle.creator2.avatar}
                   </AvatarFallback>
