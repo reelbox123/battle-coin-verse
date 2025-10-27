@@ -18,6 +18,7 @@ interface VideoCardProps {
     shares: string;
     thumbnail: string;
     profilePic: string;
+    videoUrl?: string;
   };
 }
 
@@ -63,11 +64,12 @@ export const VideoCard = ({ video }: VideoCardProps) => {
           poster={video.thumbnail}
           loop
           autoPlay
+          preload="auto"
           muted
           playsInline
           onClick={() => setIsPlaying(!isPlaying)}
         >
-          <source src="/placeholder-video.mp4" type="video/mp4" />
+          <source src={video.videoUrl || "/videos/dbattle-sample.mp4"} type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
       </div>
