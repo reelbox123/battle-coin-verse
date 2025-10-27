@@ -1,29 +1,47 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Crown, Flame, Gift, Users, Zap } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { GiftDialog } from "@/components/GiftDialog";
+import { toast } from "@/hooks/use-toast";
 
 const Battle = () => {
+  const [showGiftDialog, setShowGiftDialog] = useState(false);
+  const [selectedCreator, setSelectedCreator] = useState("");
+
   const currentBattles = [
     {
       id: 1,
-      creator1: { name: "BattleMaster", points: 15420, avatar: "BM" },
-      creator2: { name: "CryptoQueen", points: 12380, avatar: "CQ" },
+      creator1: { name: "BattleMaster", points: 15420, avatar: "BM", image: "https://images.unsplash.com/photo-1614294148960-9aa740632a87?w=400" },
+      creator2: { name: "CryptoQueen", points: 12380, avatar: "CQ", image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400" },
       viewers: 2543,
       duration: "12:34",
       status: "LIVE",
     },
     {
       id: 2,
-      creator1: { name: "StreamKing", points: 8920, avatar: "SK" },
-      creator2: { name: "TokenWarrior", points: 9105, avatar: "TW" },
+      creator1: { name: "StreamKing", points: 8920, avatar: "SK", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400" },
+      creator2: { name: "TokenWarrior", points: 9105, avatar: "TW", image: "https://images.unsplash.com/photo-1614294148960-9aa740632a87?w=400" },
       viewers: 1876,
       duration: "08:15",
       status: "LIVE",
     },
   ];
+
+  const handleSendGift = (creatorName: string) => {
+    setSelectedCreator(creatorName);
+    setShowGiftDialog(true);
+  };
+
+  const handleWatchBattle = (battleId: number) => {
+    toast({
+      title: "Joining Battle! 🎮",
+      description: "Loading livestream...",
+    });
+  };
 
   return (
     <div className="pt-20 pb-24 md:pb-8 px-4 container mx-auto max-w-7xl">
@@ -36,8 +54,12 @@ const Battle = () => {
 
       <div className="grid gap-6">
         {currentBattles.map((battle) => (
-          <Card key={battle.id} className="overflow-hidden border-primary/20 hover:border-primary/40 transition-all">
-            <div className="grid md:grid-cols-[1fr,auto,1fr] gap-4 p-6">
+          <Card key={battle.id} className="overflow-hidden border-primary/20 hover:border-primary/40 transition-all relative">
+            {/* Background Image */}
+            <div className="absolute inset-0 opacity-10">
+              <img src={battle.creator1.image} alt="" className="w-full h-full object-cover blur-sm" />
+            </div>
+            <div className="relative z-10 grid md:grid-cols-[1fr,auto,1fr] gap-4 p-6">
               {/* Creator 1 */}
               <div className="flex items-center gap-4">
                 <Avatar className="w-16 h-16 border-2 border-primary">
@@ -108,16 +130,31 @@ const Battle = () => {
               </div>
 
               <div className="flex gap-2">
-                <Button className="bg-gradient-battle hover:opacity-90">
+                <Button 
+                  className="bg-gradient-battle hover:opacity-90"
+                  onClick={() => handleSendGift(battle.creator1.name)}
+                >
                   <Gift className="w-4 h-4 mr-2" />
                   Send Gift
                 </Button>
-                <Button variant="outline">Watch Battle</Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => handleWatchBattle(battle.id)}
+                >
+                  Watch Battle
+                </Button>
               </div>
             </div>
-          </Card>
+        </Card>
         ))}
       </div>
+
+      {/* Gift Dialog */}
+      <GiftDialog 
+        open={showGiftDialog} 
+        onOpenChange={setShowGiftDialog}
+        creatorName={selectedCreator}
+      />
 
       {/* Battle Stats */}
       <div className="grid md:grid-cols-3 gap-4 mt-8">

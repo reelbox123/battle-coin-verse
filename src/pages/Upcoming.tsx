@@ -1,37 +1,36 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Clock, Bell, Users, Trophy } from "lucide-react";
+import { Calendar, Bell } from "lucide-react";
+import { CreateBattleDialog } from "@/components/CreateBattleDialog";
+import { toast } from "@/hooks/use-toast";
 
 const Upcoming = () => {
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+
   const upcomingBattles = [
     {
       id: 1,
-      creator1: { name: "BattleMaster", avatar: "BM", followers: "125K" },
-      creator2: { name: "StreamKing", avatar: "SK", followers: "98K" },
+      creator1: { name: "BattleMaster", avatar: "BM", followers: "125K", image: "https://images.unsplash.com/photo-1614294148960-9aa740632a87?w=400" },
+      creator2: { name: "StreamKing", avatar: "SK", followers: "98K", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400" },
       scheduledTime: "Today, 8:00 PM",
-      prizePool: "50K DCoin",
       category: "Featured",
-      registered: 3420,
     },
     {
       id: 2,
-      creator1: { name: "CryptoQueen", avatar: "CQ", followers: "87K" },
-      creator2: { name: "TokenWarrior", avatar: "TW", followers: "65K" },
+      creator1: { name: "CryptoQueen", avatar: "CQ", followers: "87K", image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400" },
+      creator2: { name: "TokenWarrior", avatar: "TW", followers: "65K", image: "https://images.unsplash.com/photo-1614294148960-9aa740632a87?w=400" },
       scheduledTime: "Tomorrow, 3:00 PM",
-      prizePool: "25K DCoin",
       category: "Community",
-      registered: 1876,
     },
     {
       id: 3,
-      creator1: { name: "NeonNinja", avatar: "NN", followers: "156K" },
-      creator2: { name: "PixelPro", avatar: "PP", followers: "142K" },
+      creator1: { name: "NeonNinja", avatar: "NN", followers: "156K", image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400" },
+      creator2: { name: "PixelPro", avatar: "PP", followers: "142K", image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400" },
       scheduledTime: "Saturday, 6:00 PM",
-      prizePool: "100K DCoin",
       category: "Championship",
-      registered: 8920,
     },
   ];
 
@@ -46,8 +45,12 @@ const Upcoming = () => {
 
       <div className="grid gap-6">
         {upcomingBattles.map((battle) => (
-          <Card key={battle.id} className="overflow-hidden border-primary/20 hover:border-primary/40 transition-all hover:shadow-glow">
-            <div className="p-6">
+          <Card key={battle.id} className="overflow-hidden border-primary/20 hover:border-primary/40 transition-all hover:shadow-glow relative">
+            {/* Background Image */}
+            <div className="absolute inset-0 opacity-10">
+              <img src={battle.creator1.image} alt="" className="w-full h-full object-cover blur-sm" />
+            </div>
+            <div className="relative z-10 p-6">
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <Badge className={
@@ -64,7 +67,10 @@ const Upcoming = () => {
                     {battle.scheduledTime}
                   </div>
                 </div>
-                <Button className="bg-gradient-battle hover:opacity-90">
+                <Button 
+                  className="bg-gradient-battle hover:opacity-90"
+                  onClick={() => toast({ title: "Reminder Set! 🔔", description: "We'll notify you before the battle starts" })}
+                >
                   <Bell className="w-4 h-4 mr-2" />
                   Set Reminder
                 </Button>
@@ -114,21 +120,11 @@ const Upcoming = () => {
 
               {/* Battle Details */}
               <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Prize Pool</p>
-                    <p className="font-bold">{battle.prizePool}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-secondary" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Registered</p>
-                    <p className="font-bold">{battle.registered.toLocaleString()}</p>
-                  </div>
-                </div>
-                <Button variant="outline" className="ml-auto">
+                <Button 
+                  variant="outline" 
+                  className="ml-auto"
+                  onClick={() => toast({ title: "Loading Battle Details..." })}
+                >
                   View Details
                 </Button>
               </div>
@@ -144,11 +140,21 @@ const Upcoming = () => {
           <p className="text-muted-foreground mb-6">
             Challenge other creators and compete for prizes in front of thousands of viewers
           </p>
-          <Button size="lg" className="bg-gradient-battle hover:opacity-90 shadow-glow">
+          <Button 
+            size="lg" 
+            className="bg-gradient-battle hover:opacity-90 shadow-glow"
+            onClick={() => setShowCreateDialog(true)}
+          >
             Create Your Battle
           </Button>
         </div>
       </Card>
+
+      {/* Create Battle Dialog */}
+      <CreateBattleDialog 
+        open={showCreateDialog} 
+        onOpenChange={setShowCreateDialog}
+      />
     </div>
   );
 };

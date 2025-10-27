@@ -1,11 +1,16 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Flame, Coins, Users, Edit, Settings, Share2, Crown } from "lucide-react";
+import { Trophy, Flame, Coins, Users, Edit, Settings, Share2, Crown, Video } from "lucide-react";
+import { GoLiveDialog } from "@/components/GoLiveDialog";
+import { toast } from "@/hooks/use-toast";
 
 const Profile = () => {
+  const [showGoLiveDialog, setShowGoLiveDialog] = useState(false);
+
   const userStats = {
     battles: 45,
     wins: 32,
@@ -71,11 +76,24 @@ const Profile = () => {
             </div>
 
             <div className="flex gap-3">
-              <Button className="bg-gradient-battle hover:opacity-90">
+              <Button 
+                className="bg-gradient-to-r from-destructive to-primary hover:opacity-90"
+                onClick={() => setShowGoLiveDialog(true)}
+              >
+                <Video className="w-4 h-4 mr-2" />
+                Go Live
+              </Button>
+              <Button 
+                className="bg-gradient-battle hover:opacity-90"
+                onClick={() => toast({ title: "Edit Profile", description: "Profile editor coming soon!" })}
+              >
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Profile
               </Button>
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => toast({ title: "Profile Shared!", description: "Link copied to clipboard" })}
+              >
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
@@ -221,6 +239,12 @@ const Profile = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Go Live Dialog */}
+      <GoLiveDialog 
+        open={showGoLiveDialog} 
+        onOpenChange={setShowGoLiveDialog}
+      />
     </div>
   );
 };
