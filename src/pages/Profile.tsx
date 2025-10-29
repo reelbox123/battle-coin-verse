@@ -8,10 +8,12 @@ import { Trophy, Flame, Coins, Users, Edit, Settings, Share2, Crown, Video, LogO
 import { GoLiveDialog } from "@/components/GoLiveDialog";
 import { toast } from "@/hooks/use-toast";
 import { useFlowUser } from "@/hooks/useFlowUser";
+import { useTokenBalance } from "@/hooks/useTokenBalance";
 
 const Profile = () => {
   const [showGoLiveDialog, setShowGoLiveDialog] = useState(false);
   const { user, logOut } = useFlowUser();
+  const { balance, claimTokens, loading } = useTokenBalance();
 
   const userStats = {
     battles: 45,
@@ -148,10 +150,21 @@ const Profile = () => {
             <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
               <Coins className="w-5 h-5 text-secondary" />
             </div>
-            <h3 className="font-semibold">Total Earned</h3>
+            <h3 className="font-semibold">Token Balance</h3>
           </div>
-          <p className="text-3xl font-bold">{userStats.totalEarned} DCoin</p>
-          <p className="text-sm text-muted-foreground">≈ $125,500 USD</p>
+          <p className="text-3xl font-bold">{balance.toLocaleString()} DBT</p>
+          <p className="text-sm text-muted-foreground">dBattle Tokens</p>
+          {user.loggedIn && (
+            <Button 
+              onClick={claimTokens}
+              disabled={loading}
+              className="mt-3 w-full"
+              variant="outline"
+              size="sm"
+            >
+              Claim Tokens
+            </Button>
+          )}
         </Card>
 
         <Card className="p-6 border-accent/20">

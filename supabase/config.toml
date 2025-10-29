@@ -8,3 +8,9 @@ verify_jwt = true
 
 [functions.get-livestreams]
 verify_jwt = false
+
+[functions.claim-tokens]
+verify_jwt = true
+
+[functions.get-token-balance]
+verify_jwt = true

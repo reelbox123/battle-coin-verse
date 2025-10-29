@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Gift, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useTokenBalance } from "@/hooks/useTokenBalance";
 
 interface GiftDialogProps {
   open: boolean;
@@ -30,8 +31,19 @@ const giftOptions = [
 export const GiftDialog = ({ open, onOpenChange, creatorName, onGiftSent, livestreamId, toCreatorId }: GiftDialogProps) => {
   const [selectedGift, setSelectedGift] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const { balance, fetchBalance } = useTokenBalance();
 
   const handleSendGift = async (gift: typeof giftOptions[0]) => {
+    // Check if user has enough balance
+    if (balance < gift.cost) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You need ${gift.cost} DBT but only have ${balance} DBT`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!livestreamId || !toCreatorId) {
       // Mock behavior for non-livestream gifts
       setSelectedGift(gift.id);
@@ -43,7 +55,7 @@ export const GiftDialog = ({ open, onOpenChange, creatorName, onGiftSent, livest
       setTimeout(() => {
         toast({
           title: "Gift Sent! 🎁",
-          description: `You sent ${gift.name} ${gift.icon} to ${creatorName} (${gift.cost} DCoin)`,
+          description: `You sent ${gift.name} ${gift.icon} to ${creatorName} (${gift.cost} DBT)`,
         });
         setSelectedGift(null);
         onOpenChange(false);
@@ -68,9 +80,12 @@ export const GiftDialog = ({ open, onOpenChange, creatorName, onGiftSent, livest
 
       if (error) throw error;
 
+      // Refresh balance after successful gift
+      await fetchBalance();
+
       toast({
         title: "Gift Sent! 🎁",
-        description: `You sent ${gift.name} ${gift.icon} to ${creatorName} (${gift.cost} DCoin)`,
+        description: `You sent ${gift.name} ${gift.icon} to ${creatorName} (${gift.cost} DBT)`,
       });
 
       if (data?.milestone_reached) {
@@ -133,9 +148,9 @@ export const GiftDialog = ({ open, onOpenChange, creatorName, onGiftSent, livest
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Sparkles className="w-4 h-4" />
-            <span>Balance: 5,000 DCoin</span>
+          <div className="flex items-center gap-2 text-sm">
+            <Sparkles className="w-4 h-4 text-secondary" />
+            <span className="font-semibold">Balance: {balance.toLocaleString()} DBT</span>
           </div>
         </div>
       </DialogContent>

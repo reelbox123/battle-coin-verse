@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Home, Sword, Calendar, Coins, User, Info, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFlowUser } from "@/hooks/useFlowUser";
+import { useTokenBalance } from "@/hooks/useTokenBalance";
 
 export const Navigation = () => {
   const location = useLocation();
   const { user, logIn, logOut } = useFlowUser();
+  const { balance, claimTokens } = useTokenBalance();
   
   const navItems = [
     { path: "/", icon: Home, label: "Feed" },
@@ -49,16 +51,32 @@ export const Navigation = () => {
             })}
           </div>
 
-          <div className="flow-connect-wrapper">
+          <div className="flex items-center gap-3">
             {user?.loggedIn ? (
-              <Button onClick={logOut} className="bg-black text-white hover:bg-black/90 transition-opacity shadow-glow">
-                <Wallet className="w-4 h-4 mr-2" />
-                {user.addr?.slice(0, 6)}...{user.addr?.slice(-4)}
-              </Button>
+              <>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary/10 rounded-full border border-secondary/20">
+                  <Coins className="w-4 h-4 text-secondary" />
+                  <span className="text-sm font-semibold text-secondary">
+                    {balance.toLocaleString()} DBT
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20">
+                  <Wallet className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-mono text-primary">
+                    {user.addr && `${user.addr.slice(0, 6)}...${user.addr.slice(-4)}`}
+                  </span>
+                </div>
+              </>
             ) : (
-              <Button onClick={logIn} className="bg-black text-white hover:bg-black/90 transition-opacity shadow-glow">
+              <Button 
+                onClick={async () => {
+                  await logIn();
+                  setTimeout(() => claimTokens(), 1000);
+                }}
+                className="bg-gradient-battle hover:opacity-90"
+              >
                 <Wallet className="w-4 h-4 mr-2" />
-                Connect Flow
+                Connect Wallet
               </Button>
             )}
           </div>
