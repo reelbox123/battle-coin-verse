@@ -15,7 +15,7 @@ A livestreaming battle platform built on Flow blockchain where creators compete 
 - **Frontend**: React + TypeScript + Vite
 - **Styling**: Tailwind CSS
 - **Blockchain**: Flow (using @onflow/fcl)
-- **Backend**: Supabase (Lovable Cloud)
+- **Backend**: Supabase
 - **Database**: PostgreSQL
 - **Real-time**: Supabase Realtime
 
