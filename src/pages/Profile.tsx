@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Flame, Coins, Users, Edit, Settings, Share2, Crown, Video } from "lucide-react";
+import { Trophy, Flame, Coins, Users, Edit, Settings, Share2, Crown, Video, LogOut, Wallet } from "lucide-react";
 import { GoLiveDialog } from "@/components/GoLiveDialog";
 import { toast } from "@/hooks/use-toast";
+import { useFlowUser } from "@/hooks/useFlowUser";
 
 const Profile = () => {
   const [showGoLiveDialog, setShowGoLiveDialog] = useState(false);
+  const { user, logOut } = useFlowUser();
 
   const userStats = {
     battles: 45,
@@ -55,6 +57,15 @@ const Profile = () => {
             <p className="text-muted-foreground mb-4">
               Professional battle streamer | Top 200 Global
             </p>
+            
+            {user.loggedIn && user.addr && (
+              <div className="flex items-center gap-2 mb-4 text-sm">
+                <Wallet className="w-4 h-4 text-primary" />
+                <code className="px-2 py-1 bg-muted rounded font-mono">
+                  {user.addr}
+                </code>
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-6 mb-4">
               <div>
@@ -100,6 +111,18 @@ const Profile = () => {
               <Button variant="outline" size="icon">
                 <Settings className="w-4 h-4" />
               </Button>
+              {user.loggedIn && (
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    logOut();
+                    toast({ title: "Logged Out", description: "Flow wallet disconnected" });
+                  }}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              )}
             </div>
           </div>
         </div>
