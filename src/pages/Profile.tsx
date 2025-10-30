@@ -36,7 +36,7 @@ const Profile = () => {
         .from('profiles')
         .select('*')
         .eq('flow_address', user.addr)
-        .single();
+        .maybeSingle();
 
       if (profileData) {
         setUserStats({
@@ -47,17 +47,21 @@ const Profile = () => {
         });
       }
 
-      // Load recent battles from livestream_gifts
-      const { data: giftsData } = await supabase
-        .from('livestream_gifts')
-        .select('*, livestreams(*)')
-        .eq('from_user_id', profileData?.user_id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // Load recent battles from livestream_gifts only if we have a valid user_id
+      if (profileData?.user_id) {
+        const { data: giftsData } = await supabase
+          .from('livestream_gifts')
+          .select('*, livestreams(*)')
+          .eq('from_user_id', profileData.user_id)
+          .order('created_at', { ascending: false })
+          .limit(5);
 
-      if (giftsData) {
-        setRecentBattles(giftsData);
-        setUserStats(prev => ({ ...prev, battles: giftsData.length }));
+        if (giftsData) {
+          setRecentBattles(giftsData);
+          setUserStats(prev => ({ ...prev, battles: giftsData.length }));
+        }
+      } else {
+        setRecentBattles([]);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
