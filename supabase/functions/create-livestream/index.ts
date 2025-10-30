@@ -14,27 +14,52 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    
-    if (!user) {
-      throw new Error('Not authenticated');
+    const { title, description, collaborator_id, flow_address } = await req.json();
+
+    if (!flow_address) {
+      return new Response(
+        JSON.stringify({ error: "Flow address is required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    const { title, description, collaborator_id } = await req.json();
+    console.log("Creating livestream for Flow address:", flow_address);
+
+    // Get or create user profile
+    let { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('user_id, username')
+      .eq('flow_address', flow_address)
+      .single();
+
+    if (!profile) {
+      // Create profile if it doesn't exist
+      const username = `user_${flow_address.slice(-8)}`;
+      const { data: newProfile, error: createError } = await supabaseClient
+        .from('profiles')
+        .insert({
+          username: username,
+          flow_address: flow_address,
+          dcoin_balance: 0,
+        })
+        .select('user_id, username')
+        .single();
+
+      if (createError) throw createError;
+      profile = newProfile;
+    }
 
     // Create livestream
     const { data: livestream, error: livestreamError } = await supabaseClient
       .from('livestreams')
       .insert({
-        creator_id: user.id,
+        creator_id: profile.user_id,
         collaborator_id: collaborator_id || null,
         title,
         description,
@@ -59,6 +84,8 @@ serve(async (req) => {
       });
 
     if (roundError) throw roundError;
+
+    console.log("Livestream created successfully:", livestream.id);
 
     return new Response(JSON.stringify({ success: true, livestream }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

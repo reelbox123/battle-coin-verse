@@ -16,35 +16,40 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { flow_address } = await req.json();
 
-    if (authError || !user) {
-      console.error("Auth error:", authError);
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!flow_address) {
+      return new Response(
+        JSON.stringify({ error: "Flow address is required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    // Get user's token balance from profile
+    console.log("Fetching balance for Flow address:", flow_address);
+
+    // Get user's token balance from profile by flow_address
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("dcoin_balance, flow_address")
-      .eq("user_id", user.id)
+      .eq("flow_address", flow_address)
       .single();
 
     if (profileError) {
       if (profileError.code === "PGRST116") {
         // Profile doesn't exist yet
+        console.log("Profile not found for address:", flow_address);
         return new Response(
-          JSON.stringify({ balance: 0, flow_address: null }),
+          JSON.stringify({ balance: 0, flow_address }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       throw profileError;
     }
+
+    console.log("Balance found:", profile.dcoin_balance);
 
     return new Response(
       JSON.stringify({

@@ -1,7 +1,7 @@
 project_id = "xtzcumhuyxphesbjxjxn"
 
 [functions.create-livestream]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-gift]
 verify_jwt = true
@@ -10,10 +10,10 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.claim-tokens]
-verify_jwt = true
+verify_jwt = false
 
 [functions.get-token-balance]
-verify_jwt = true
+verify_jwt = false
 
 [functions.update-livestream-status]
 verify_jwt = true

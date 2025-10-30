@@ -10,14 +10,16 @@ export function useTokenBalance() {
   const [flowAddress, setFlowAddress] = useState<string | null>(null);
 
   const fetchBalance = async () => {
-    if (!user.loggedIn) {
+    if (!user.loggedIn || !user.addr) {
       setBalance(0);
       return;
     }
 
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke("get-token-balance");
+      const { data, error } = await supabase.functions.invoke("get-token-balance", {
+        body: { flow_address: user.addr },
+      });
 
       if (error) throw error;
 

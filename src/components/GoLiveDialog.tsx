@@ -55,6 +55,7 @@ export const GoLiveDialog = ({ open, onOpenChange }: GoLiveDialogProps) => {
           title,
           description,
           collaborator_id: null,
+          flow_address: user.addr,
         },
       });
 

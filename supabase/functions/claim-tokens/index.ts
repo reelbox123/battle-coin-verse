@@ -16,18 +16,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      console.error("Auth error:", authError);
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { flow_address } = await req.json();
 
     if (!flow_address) {
@@ -37,11 +25,13 @@ serve(async (req) => {
       });
     }
 
+    console.log("Claiming tokens for Flow address:", flow_address);
+
     // Check if user has already claimed tokens
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("dcoin_balance, flow_address")
-      .eq("user_id", user.id)
+      .select("dcoin_balance, flow_address, user_id")
+      .eq("flow_address", flow_address)
       .single();
 
     if (profileError && profileError.code !== "PGRST116") {
@@ -50,11 +40,13 @@ serve(async (req) => {
 
     // If profile doesn't exist, create it with initial tokens
     if (!profile) {
+      // Generate a username from the flow address
+      const username = `user_${flow_address.slice(-8)}`;
+      
       const { data: newProfile, error: insertError } = await supabase
         .from("profiles")
         .insert({
-          user_id: user.id,
-          username: user.email?.split("@")[0] || "user",
+          username: username,
           dcoin_balance: 1000, // Initial token grant
           flow_address: flow_address,
         })
@@ -63,7 +55,7 @@ serve(async (req) => {
 
       if (insertError) throw insertError;
 
-      console.log("New user claimed tokens:", user.id, flow_address);
+      console.log("New user claimed tokens:", flow_address);
 
       return new Response(
         JSON.stringify({
@@ -76,17 +68,9 @@ serve(async (req) => {
       );
     }
 
-    // If user already has a profile but no flow_address, update it
-    if (!profile.flow_address) {
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ flow_address: flow_address })
-        .eq("user_id", user.id);
-
-      if (updateError) throw updateError;
-    }
-
     // User already claimed, return current balance
+    console.log("User already claimed tokens:", flow_address, "Balance:", profile.dcoin_balance);
+    
     return new Response(
       JSON.stringify({
         success: true,
