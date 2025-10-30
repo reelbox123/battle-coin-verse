@@ -81,13 +81,13 @@ export const GoLiveDialog = ({ open, onOpenChange }: GoLiveDialogProps) => {
 
   const handleEndStream = async () => {
     try {
-      const { error } = await supabase
-        .from('livestreams')
-        .update({ 
+      const { error } = await supabase.functions.invoke('update-livestream-status', {
+        body: {
+          livestream_id: streamId,
           status: 'ended',
-          ended_at: new Date().toISOString()
-        })
-        .eq('id', streamId);
+          flow_address: user.addr,
+        },
+      });
 
       if (error) throw error;
 

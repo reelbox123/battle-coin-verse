@@ -14,24 +14,37 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    
-    if (!user) {
-      throw new Error('Not authenticated');
+    const { livestream_id, status, flow_address } = await req.json();
+
+    if (!livestream_id || !status || !flow_address) {
+      throw new Error('Missing required fields');
     }
 
-    const { livestream_id, status } = await req.json();
+    console.log('Updating livestream status:', livestream_id, status, 'for', flow_address);
 
-    if (!livestream_id || !status) {
-      throw new Error('Missing required fields');
+    // Get profile by flow_address
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('id')
+      .eq('flow_address', flow_address)
+      .single();
+
+    if (profileError) throw profileError;
+
+    // Verify ownership before updating
+    const { data: owningStream, error: streamError } = await supabaseClient
+      .from('livestreams')
+      .select('id, creator_id')
+      .eq('id', livestream_id)
+      .single();
+
+    if (streamError) throw streamError;
+    
+    if (!owningStream || owningStream.creator_id !== profile.id) {
+      throw new Error('Not authorized to update this livestream');
     }
 
     // Update livestream status
@@ -42,7 +55,6 @@ serve(async (req) => {
         ended_at: status === 'ended' ? new Date().toISOString() : null,
       })
       .eq('id', livestream_id)
-      .eq('creator_id', user.id)
       .select()
       .single();
 

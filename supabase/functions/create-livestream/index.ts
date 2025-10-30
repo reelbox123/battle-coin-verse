@@ -34,9 +34,9 @@ serve(async (req) => {
     // Get or create user profile
     let { data: profile } = await supabaseClient
       .from('profiles')
-      .select('user_id, username')
+      .select('id, username, dcoin_balance')
       .eq('flow_address', flow_address)
-      .single();
+      .maybeSingle();
 
     if (!profile) {
       // Create profile if it doesn't exist
@@ -46,9 +46,8 @@ serve(async (req) => {
         .insert({
           username: username,
           flow_address: flow_address,
-          dcoin_balance: 0,
         })
-        .select('user_id, username')
+        .select('id, username, dcoin_balance')
         .single();
 
       if (createError) throw createError;
@@ -59,7 +58,7 @@ serve(async (req) => {
     const { data: livestream, error: livestreamError } = await supabaseClient
       .from('livestreams')
       .insert({
-        creator_id: profile.user_id,
+        creator_id: profile.id,
         collaborator_id: collaborator_id || null,
         title,
         description,

@@ -68,6 +68,28 @@ serve(async (req) => {
       );
     }
 
+    // If profile exists but has no balance or zero balance, grant welcome bonus
+    if (!profile.dcoin_balance || profile.dcoin_balance <= 0) {
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ dcoin_balance: 1000 })
+        .eq("flow_address", flow_address);
+
+      if (updateError) throw updateError;
+
+      console.log("User claimed welcome bonus:", flow_address);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          tokens_claimed: 1000,
+          total_balance: 1000,
+          message: "Welcome bonus claimed!",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // User already claimed, return current balance
     console.log("User already claimed tokens:", flow_address, "Balance:", profile.dcoin_balance);
     
