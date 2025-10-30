@@ -192,6 +192,67 @@ export function useTokenBalance() {
 }
 ```
 
+## 📹 Real-Time Livestreaming Implementation
+
+The platform uses **WebRTC** (Web Real-Time Communication) for seamless live streaming without requiring external API keys or services.
+
+### How It Works
+
+#### Frontend Components
+
+**1. LiveStreamView Component** (`src/components/LiveStreamView.tsx`)
+- Manages live video stream using browser MediaStream API
+- Accesses user's camera and microphone via `navigator.mediaDevices.getUserMedia()`
+- Provides real-time controls for video/audio toggle
+- Displays live badge and stream status
+- Handles stream cleanup on unmount
+
+**2. GoLiveDialog Component** (`src/components/GoLiveDialog.tsx`)
+- Workflow: Enter title → Create livestream → Start camera → Go live
+- Integrates with backend to create livestream record
+- Opens full-screen streaming view with controls
+- Provides end stream functionality
+
+#### Backend Flow
+
+```
+1. Creator clicks "Go Live" button
+2. Frontend calls `create-livestream` edge function
+3. Backend creates livestream record with status='live'
+4. WebRTC accesses creator's camera/microphone
+5. Stream appears on feed via Supabase Realtime
+6. Viewers watch live stream in real-time
+7. Creator clicks "End Stream"
+8. Frontend calls `update-livestream-status` with status='ended'
+```
+
+### WebRTC Implementation
+
+```typescript
+// Access user media (no API keys needed)
+const stream = await navigator.mediaDevices.getUserMedia({
+  video: { width: 1280, height: 720 },
+  audio: true
+});
+
+// Display stream locally
+videoRef.current.srcObject = stream;
+
+// Toggle video/audio tracks
+videoTrack.enabled = !videoTrack.enabled;
+audioTrack.enabled = !audioTrack.enabled;
+
+// Stop stream when done
+stream.getTracks().forEach(track => track.stop());
+```
+
+### Real-Time Feed Integration
+
+- Livestreams automatically appear on the main feed
+- Uses Supabase Realtime for instant updates
+- Status changes (live/ended) reflected immediately
+- No manual refresh required
+
 ## 🔐 Backend Functions
 
 ### Database Schema
@@ -252,7 +313,99 @@ CREATE TABLE livestream_gifts (
 
 ### Edge Functions
 
-#### 1. Claim Tokens (`supabase/functions/claim-tokens/index.ts`)
+#### 1. Create Livestream (`supabase/functions/create-livestream/index.ts`)
+
+**Purpose**: Initialize a new livestream battle session
+
+```typescript
+// Request body
+{
+  title: string;
+  description?: string;
+  collaborator_id?: string;
+}
+
+// Response
+{
+  success: boolean;
+  livestream: {
+    id: string;
+    creator_id: string;
+    title: string;
+    status: 'live';
+    started_at: string;
+  }
+}
+```
+
+**Implementation**:
+- Authenticates user via JWT token
+- Creates livestream record in database
+- Initializes first round with milestone (1000 points)
+- Returns livestream data for frontend streaming
+
+**Usage**:
+```typescript
+const { data } = await supabase.functions.invoke('create-livestream', {
+  body: { title: "Epic Battle!", description: "Let's go!" }
+});
+```
+
+#### 2. Update Livestream Status (`supabase/functions/update-livestream-status/index.ts`)
+
+**Purpose**: Change livestream status (end stream, update state)
+
+```typescript
+// Request body
+{
+  livestream_id: string;
+  status: 'live' | 'ended';
+}
+
+// Response
+{
+  success: boolean;
+  livestream: LivestreamObject;
+}
+```
+
+**Implementation**:
+- Verifies user owns the livestream
+- Updates status and ended_at timestamp
+- Closes all active rounds if ending stream
+- Returns updated livestream object
+
+**Usage**:
+```typescript
+const { data } = await supabase.functions.invoke('update-livestream-status', {
+  body: { livestream_id: "uuid", status: "ended" }
+});
+```
+
+#### 3. Get Livestreams (`supabase/functions/get-livestreams/index.ts`)
+
+**Purpose**: Fetch all active livestreams for the feed
+
+**Response**:
+```typescript
+{
+  livestreams: Array<{
+    id: string;
+    title: string;
+    creator_id: string;
+    status: 'live';
+    viewer_count: number;
+    started_at: string;
+  }>
+}
+```
+
+**Usage**:
+```typescript
+const { data } = await supabase.functions.invoke('get-livestreams');
+```
+
+#### 4. Claim Tokens (`supabase/functions/claim-tokens/index.ts`)
 
 **Purpose**: Award initial tokens when users connect their Flow wallet
 
@@ -314,7 +467,7 @@ const { data } = await supabase.functions.invoke("claim-tokens", {
 });
 ```
 
-#### 2. Get Token Balance (`supabase/functions/get-token-balance/index.ts`)
+#### 5. Get Token Balance (`supabase/functions/get-token-balance/index.ts`)
 
 **Purpose**: Retrieve user's current DBT token balance
 
@@ -353,7 +506,7 @@ const { data } = await supabase.functions.invoke("get-token-balance");
 console.log(data.balance); // Current DBT balance
 ```
 
-#### 3. Send Gift (`supabase/functions/send-gift/index.ts`)
+#### 6. Send Gift (`supabase/functions/send-gift/index.ts`)
 
 **Purpose**: Process gift transactions during livestreams, deduct tokens, update scores
 
@@ -460,16 +613,18 @@ const { data } = await supabase.functions.invoke("send-gift", {
 ```
 supabase/
 ├── functions/
+│   ├── create-livestream/
+│   │   └── index.ts          # Initialize new battle stream
+│   ├── update-livestream-status/
+│   │   └── index.ts          # Update livestream state (end stream)
+│   ├── get-livestreams/
+│   │   └── index.ts          # Fetch active livestreams
 │   ├── claim-tokens/
 │   │   └── index.ts          # Award initial tokens on wallet connection
 │   ├── get-token-balance/
 │   │   └── index.ts          # Fetch user's DBT balance
-│   ├── send-gift/
-│   │   └── index.ts          # Process gift transactions
-│   ├── create-livestream/
-│   │   └── index.ts          # Initialize new battle stream
-│   └── get-livestreams/
-│       └── index.ts          # Fetch active livestreams
+│   └── send-gift/
+│       └── index.ts          # Process gift transactions
 ├── migrations/
 │   └── [timestamp]_*.sql     # Database schema changes
 └── config.toml               # Function configurations

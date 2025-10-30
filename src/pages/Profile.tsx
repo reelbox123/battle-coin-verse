@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,32 +9,66 @@ import { GoLiveDialog } from "@/components/GoLiveDialog";
 import { toast } from "@/hooks/use-toast";
 import { useFlowUser } from "@/hooks/useFlowUser";
 import { useTokenBalance } from "@/hooks/useTokenBalance";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
   const [showGoLiveDialog, setShowGoLiveDialog] = useState(false);
   const { user, logOut } = useFlowUser();
   const { balance, claimTokens, loading } = useTokenBalance();
+  const [userStats, setUserStats] = useState({
+    battles: 0,
+    wins: 0,
+    followers: 0,
+    following: 0,
+  });
+  const [recentBattles, setRecentBattles] = useState<any[]>([]);
 
-  const userStats = {
-    battles: 45,
-    wins: 32,
-    totalEarned: "125.5K",
-    followers: "12.5K",
-    following: 234,
-    rank: "#127",
+  useEffect(() => {
+    if (user.loggedIn && user.addr) {
+      loadUserData();
+    }
+  }, [user]);
+
+  const loadUserData = async () => {
+    try {
+      // Load user profile stats
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('flow_address', user.addr)
+        .single();
+
+      if (profileData) {
+        setUserStats({
+          battles: 0,
+          wins: 0,
+          followers: 0,
+          following: 0,
+        });
+      }
+
+      // Load recent battles from livestream_gifts
+      const { data: giftsData } = await supabase
+        .from('livestream_gifts')
+        .select('*, livestreams(*)')
+        .eq('from_user_id', profileData?.user_id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (giftsData) {
+        setRecentBattles(giftsData);
+        setUserStats(prev => ({ ...prev, battles: giftsData.length }));
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
   };
 
-  const recentBattles = [
-    { opponent: "CryptoQueen", result: "Won", points: "+2.5K", date: "2 hours ago" },
-    { opponent: "StreamKing", result: "Won", points: "+1.8K", date: "5 hours ago" },
-    { opponent: "TokenWarrior", result: "Lost", points: "-500", date: "1 day ago" },
-  ];
-
   const achievements = [
-    { title: "Battle Master", description: "Win 30 battles", icon: Trophy, unlocked: true },
-    { title: "Streak King", description: "10 wins in a row", icon: Flame, unlocked: true },
+    { title: "Battle Master", description: "Win 30 battles", icon: Trophy, unlocked: userStats.wins >= 30 },
+    { title: "Streak King", description: "10 wins in a row", icon: Flame, unlocked: false },
     { title: "Generous", description: "Send 1000 gifts", icon: Coins, unlocked: false },
-    { title: "Popular", description: "10K followers", icon: Users, unlocked: true },
+    { title: "Popular", description: "10K followers", icon: Users, unlocked: userStats.followers >= 10000 },
   ];
 
   return (
@@ -71,19 +105,19 @@ const Profile = () => {
 
             <div className="flex flex-wrap gap-6 mb-4">
               <div>
-                <p className="text-2xl font-bold">{userStats.followers}</p>
+                <p className="text-2xl font-bold">{userStats.followers.toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground">Followers</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">{userStats.following}</p>
+                <p className="text-2xl font-bold">{userStats.following.toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground">Following</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">{userStats.battles}</p>
+                <p className="text-2xl font-bold">{userStats.battles.toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground">Battles</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-primary">{userStats.wins}</p>
+                <p className="text-2xl font-bold text-primary">{userStats.wins.toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground">Wins</p>
               </div>
             </div>
@@ -137,12 +171,12 @@ const Profile = () => {
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <Trophy className="w-5 h-5 text-primary" />
             </div>
-            <h3 className="font-semibold">Global Rank</h3>
+            <h3 className="font-semibold">Total Earned</h3>
           </div>
           <p className="text-3xl font-bold bg-gradient-battle bg-clip-text text-transparent">
-            {userStats.rank}
+            {balance.toLocaleString()} DBT
           </p>
-          <p className="text-sm text-muted-foreground">Top 1% of users</p>
+          <p className="text-sm text-muted-foreground">Battle earnings</p>
         </Card>
 
         <Card className="p-6 border-secondary/20">
@@ -175,9 +209,9 @@ const Profile = () => {
             <h3 className="font-semibold">Win Rate</h3>
           </div>
           <p className="text-3xl font-bold">
-            {((userStats.wins / userStats.battles) * 100).toFixed(1)}%
+            {userStats.battles > 0 ? ((userStats.wins / userStats.battles) * 100).toFixed(1) : "0.0"}%
           </p>
-          <p className="text-sm text-muted-foreground">Above average</p>
+          <p className="text-sm text-muted-foreground">{userStats.wins} / {userStats.battles} battles won</p>
         </Card>
       </div>
 
@@ -191,36 +225,39 @@ const Profile = () => {
 
         <TabsContent value="battles" className="mt-6">
           <Card className="border-primary/20">
-            <div className="divide-y divide-border">
-              {recentBattles.map((battle, index) => (
-                <div key={index} className="p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-10 h-10">
-                        <AvatarFallback>{battle.opponent.slice(0, 2)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold">vs {battle.opponent}</p>
-                        <p className="text-sm text-muted-foreground">{battle.date}</p>
+            {recentBattles.length > 0 ? (
+              <div className="divide-y divide-border">
+                {recentBattles.map((battle, index) => (
+                  <div key={index} className="p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="w-10 h-10">
+                          <AvatarFallback>DB</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-semibold">{battle.livestreams?.title || 'Battle'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(battle.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="default" className="bg-primary">
+                          Gift Sent
+                        </Badge>
+                        <p className="text-sm font-semibold mt-1 text-primary">
+                          {battle.amount} DBT
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <Badge
-                        variant={battle.result === "Won" ? "default" : "secondary"}
-                        className={battle.result === "Won" ? "bg-primary" : ""}
-                      >
-                        {battle.result}
-                      </Badge>
-                      <p className={`text-sm font-semibold mt-1 ${
-                        battle.result === "Won" ? "text-primary" : "text-muted-foreground"
-                      }`}>
-                        {battle.points}
-                      </p>
-                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-12 text-center">
+                <p className="text-muted-foreground">No battle history yet</p>
+              </div>
+            )}
           </Card>
         </TabsContent>
 
