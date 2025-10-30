@@ -1,0 +1,192 @@
+{
+  "contracts": {
+    "Burner": {
+      "source": "./contracts/utility/Burner.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "mainnet": "f233dcee88fe0abe",
+        "testing": "0000000000000007",
+        "testnet": "9a0766d93b6608b7"
+      }
+    },
+    "ExampleToken": {
+      "source": "./contracts/ExampleToken.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testing": "0000000000000007",
+        "testnet": "7bb1b058bf341d24"
+      }
+    },
+    "FiatToken": {
+      "source": "./contracts/utility/USDC/FiatToken.cdc",
+      "aliases": {
+        "mainnet": "1654653399040a61",
+        "testnet": "a983fecbed621163"
+      }
+    },
+    "FungibleToken": {
+      "source": "./contracts/FungibleToken.cdc",
+      "aliases": {
+        "emulator": "ee82856bf20e2aa6",
+        "mainnet": "f233dcee88fe0abe",
+        "testing": "0000000000000007",
+        "testnet": "9a0766d93b6608b7"
+      }
+    },
+    "FungibleTokenMetadataViews": {
+      "source": "./contracts/FungibleTokenMetadataViews.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "mainnet": "f233dcee88fe0abe",
+        "testing": "0000000000000007",
+        "testnet": "9a0766d93b6608b7"
+      }
+    },
+    "FungibleTokenSwitchboard": {
+      "source": "./contracts/FungibleTokenSwitchboard.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "mainnet": "f233dcee88fe0abe",
+        "testing": "0000000000000007",
+        "testnet": "9a0766d93b6608b7"
+      }
+    },
+    "LostAndFound": {
+      "source": "./contracts/utility/L\u0026F/LostAndFound.cdc",
+      "aliases": {
+        "mainnet": "473d6a2c37eab5be",
+        "testnet": "be4635353f55bbd4"
+      }
+    },
+    "MaliciousToken": {
+      "source": "./contracts/test/MaliciousToken.cdc",
+      "aliases": {
+        "testing": "0000000000000007"
+      }
+    },
+    "PrivateReceiverForwarder": {
+      "source": "./contracts/utility/PrivateReceiverForwarder.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testing": "0000000000000007"
+      }
+    },
+    "TokenForwarding": {
+      "source": "./contracts/utility/TokenForwarding.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testing": "0000000000000007",
+        "testnet": "51ea0e37c27a1f1a"
+      }
+    }
+  },
+  "dependencies": {
+    "CrossVMMetadataViews": {
+      "source": "mainnet://1d7e57aa55817448.CrossVMMetadataViews",
+      "hash": "dded0271279d3ca75f30b56f7552994d8b8bc4f75ef94a4a8d9d6b089e06c25c",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "mainnet": "1d7e57aa55817448",
+        "testnet": "631e88ae7f1d7c20"
+      }
+    },
+    "EVM": {
+      "source": "mainnet://e467b9dd11fa00df.EVM",
+      "hash": "df2065d3eebc1e690e0b52a3f293bdf6c22780c7a9e7ef48a708a651b87abdf0",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "mainnet": "e467b9dd11fa00df",
+        "testnet": "8c5303eaa26202d6"
+      }
+    },
+    "FlowToken": {
+      "source": "mainnet://1654653399040a61.FlowToken",
+      "hash": "cefb25fd19d9fc80ce02896267eb6157a6b0df7b1935caa8641421fe34c0e67a",
+      "aliases": {
+        "emulator": "0ae53cb6e3f42a79",
+        "mainnet": "1654653399040a61",
+        "testnet": "7e60df042a9c0868"
+      }
+    },
+    "MetadataViews": {
+      "source": "mainnet://1d7e57aa55817448.MetadataViews",
+      "hash": "9032f46909e729d26722cbfcee87265e4f81cd2912e936669c0e6b510d007e81",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "mainnet": "1d7e57aa55817448",
+        "testnet": "631e88ae7f1d7c20"
+      }
+    },
+    "NonFungibleToken": {
+      "source": "mainnet://1d7e57aa55817448.NonFungibleToken",
+      "hash": "b63f10e00d1a814492822652dac7c0574428a200e4c26cb3c832c4829e2778f0",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "mainnet": "1d7e57aa55817448",
+        "testnet": "631e88ae7f1d7c20"
+      }
+    },
+    "ViewResolver": {
+      "source": "mainnet://1d7e57aa55817448.ViewResolver",
+      "hash": "374a1994046bac9f6228b4843cb32393ef40554df9bd9907a702d098a2987bde",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "mainnet": "1d7e57aa55817448",
+        "testnet": "631e88ae7f1d7c20"
+      }
+    }
+  },
+  "networks": {
+    "emulator": "127.0.0.1:3569",
+    "mainnet": "access.mainnet.nodes.onflow.org:9000",
+    "testing": "127.0.0.1:3569",
+    "testnet": "access.devnet.nodes.onflow.org:9000"
+  },
+  "accounts": {
+    "emulator-account": {
+      "address": "f8d6e0586b0a20c7",
+      "key": "1a05ba433be5af2988e814d1e4fa08f1574140e6cb5649a861cc6377718c51be"
+    },
+    "mainnet-ft": {
+      "address": "f233dcee88fe0abe",
+      "key": {
+        "type": "google-kms",
+        "hashAlgorithm": "SHA2_256",
+        "resourceID": "projects/dl-flow/locations/global/keyRings/mainnet/cryptoKeys/service-account/cryptoKeyVersions/1"
+      }
+    },
+    "orsini": {
+      "address": "7bb1b058bf341d24",
+      "key": {
+        "type": "file",
+        "location": "orsini.pkey"
+      }
+    },
+    "testnet-ft": {
+      "address": "9a0766d93b6608b7",
+      "key": {
+        "type": "file",
+        "location": "./testnet.pkey"
+      }
+    }
+  },
+  "deployments": {
+    "emulator": {
+      "emulator-account": [
+        "FungibleToken",
+        "NonFungibleToken",
+        "MetadataViews",
+        "FungibleTokenMetadataViews",
+        "FungibleTokenSwitchboard",
+        "TokenForwarding",
+        "ExampleToken"
+      ]
+    },
+    "mainnet": {
+      "mainnet-ft": ["FungibleToken"]
+    },
+    "testnet": {
+      "orsini": ["ExampleToken"]
+    }
+  }
+}
