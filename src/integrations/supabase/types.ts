@@ -14,6 +14,91 @@ export type Database = {
   }
   public: {
     Tables: {
+      compound_schedule: {
+        Row: {
+          created_at: string | null
+          frequency: string
+          id: string
+          last_compound_at: string | null
+          next_compound_at: string
+          stake_id: string
+          status: string | null
+          total_compounds: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          frequency: string
+          id?: string
+          last_compound_at?: string | null
+          next_compound_at: string
+          stake_id: string
+          status?: string | null
+          total_compounds?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          frequency?: string
+          id?: string
+          last_compound_at?: string | null
+          next_compound_at?: string
+          stake_id?: string
+          status?: string | null
+          total_compounds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compound_schedule_stake_id_fkey"
+            columns: ["stake_id"]
+            isOneToOne: false
+            referencedRelation: "user_stakes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gift_burn_log: {
+        Row: {
+          auto_staked: boolean | null
+          created_at: string | null
+          dcoin_burned: number
+          gift_id: string | null
+          id: string
+          stake_id: string | null
+          stdcoin_minted: number
+          user_id: string
+        }
+        Insert: {
+          auto_staked?: boolean | null
+          created_at?: string | null
+          dcoin_burned: number
+          gift_id?: string | null
+          id?: string
+          stake_id?: string | null
+          stdcoin_minted: number
+          user_id: string
+        }
+        Update: {
+          auto_staked?: boolean | null
+          created_at?: string | null
+          dcoin_burned?: number
+          gift_id?: string | null
+          id?: string
+          stake_id?: string | null
+          stdcoin_minted?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_burn_log_stake_id_fkey"
+            columns: ["stake_id"]
+            isOneToOne: false
+            referencedRelation: "user_stakes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       livestream_gifts: {
         Row: {
           amount: number
@@ -191,6 +276,7 @@ export type Database = {
           dcoin_balance: number
           flow_address: string | null
           id: string
+          stdcoin_balance: number | null
           updated_at: string
           user_id: string | null
           username: string
@@ -201,6 +287,7 @@ export type Database = {
           dcoin_balance?: number
           flow_address?: string | null
           id?: string
+          stdcoin_balance?: number | null
           updated_at?: string
           user_id?: string | null
           username: string
@@ -211,11 +298,151 @@ export type Database = {
           dcoin_balance?: number
           flow_address?: string | null
           id?: string
+          stdcoin_balance?: number | null
           updated_at?: string
           user_id?: string | null
           username?: string
         }
         Relationships: []
+      }
+      staking_pools: {
+        Row: {
+          base_apy: number
+          boosted_apy: number
+          created_at: string | null
+          description: string | null
+          duration_days: number
+          id: string
+          min_stake: number
+          name: string
+          perks: Json | null
+          reward_frequency: string
+          status: string | null
+          total_staked: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_apy: number
+          boosted_apy: number
+          created_at?: string | null
+          description?: string | null
+          duration_days: number
+          id?: string
+          min_stake: number
+          name: string
+          perks?: Json | null
+          reward_frequency: string
+          status?: string | null
+          total_staked?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_apy?: number
+          boosted_apy?: number
+          created_at?: string | null
+          description?: string | null
+          duration_days?: number
+          id?: string
+          min_stake?: number
+          name?: string
+          perks?: Json | null
+          reward_frequency?: string
+          status?: string | null
+          total_staked?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      staking_rewards: {
+        Row: {
+          amount: number
+          claimed: boolean | null
+          claimed_at: string | null
+          created_at: string | null
+          id: string
+          reward_type: string
+          stake_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          claimed?: boolean | null
+          claimed_at?: string | null
+          created_at?: string | null
+          id?: string
+          reward_type: string
+          stake_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          claimed?: boolean | null
+          claimed_at?: string | null
+          created_at?: string | null
+          id?: string
+          reward_type?: string
+          stake_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staking_rewards_stake_id_fkey"
+            columns: ["stake_id"]
+            isOneToOne: false
+            referencedRelation: "user_stakes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_stakes: {
+        Row: {
+          amount: number
+          auto_compound: boolean | null
+          created_at: string | null
+          id: string
+          pool_id: string
+          staked_at: string | null
+          status: string | null
+          total_rewards_claimed: number | null
+          unlock_at: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          auto_compound?: boolean | null
+          created_at?: string | null
+          id?: string
+          pool_id: string
+          staked_at?: string | null
+          status?: string | null
+          total_rewards_claimed?: number | null
+          unlock_at: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          auto_compound?: boolean | null
+          created_at?: string | null
+          id?: string
+          pool_id?: string
+          staked_at?: string | null
+          status?: string | null
+          total_rewards_claimed?: number | null
+          unlock_at?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_stakes_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "staking_pools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
