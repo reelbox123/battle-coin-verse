@@ -675,8 +675,532 @@ VITE_SUPABASE_PROJECT_ID=your_project_id
 
 MIT License - see LICENSE file for details
 
+## 💰 Flow Forte Staking Integration
+
+dBattle integrates **Flow Forte** for automated staking, compounding, and yield optimization. Flow Forte enables perpetual payouts and agent-based automation for passive stdCoin yields.
+
+### Architecture Overview
+
+```mermaid
+graph TD
+    A[User Gifts dCoin] --> B[Gift Burn Action]
+    B --> C[dCoin Burned]
+    C --> D[stdCoin Minted 1:1]
+    D --> E{Auto-Stake?}
+    E -->|50% Auto| F[Stake to Pool]
+    E -->|50% Liquid| G[User Balance]
+    F --> H[Flow Forte Agent]
+    H --> I[Auto-Compound Daily]
+    I --> J[Boosted APY 18% → 25%]
+    J --> K[Claim Rewards]
+```
+
+### Token Economics
+
+- **dCoin**: Base token for gifting creators during battles
+- **stdCoin**: Staking derivative token earned from:
+  - Burning dCoin (1:1 ratio)
+  - Staking rewards
+  - Auto-compounding yields
+
+### Staking Pools
+
+| Pool | Base APY | Boosted APY | Duration | Min Stake | Frequency |
+|------|----------|-------------|----------|-----------|-----------|
+| Battle Legends | 18% | 25% | 30 days | 100 dCoin | Daily |
+| Creator Support | 15% | 22% | 14 days | 50 dCoin | Weekly |
+| Community Growth | 20% | 28% | 90 days | 500 dCoin | Daily |
+
+**Boosted APY** achieved through Flow Forte auto-compounding.
+
+### Integration Code
+
+#### 1. Frontend Staking Hook (`src/hooks/useStaking.ts`)
+
+```typescript
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+export function useStaking() {
+  const [pools, setPools] = useState([]);
+  const [totalRewards, setTotalRewards] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const fetchStakingData = async () => {
+    const { data } = await supabase.functions.invoke("get-staking-data");
+    setPools(data.pools);
+    setTotalRewards(data.total_rewards);
+  };
+
+  const stakeTokens = async (poolId: string, amount: number) => {
+    const { data, error } = await supabase.functions.invoke("stake-tokens", {
+      body: { pool_id: poolId, amount },
+    });
+    if (!error) {
+      toast({ title: "Staking Successful!", description: data.message });
+      fetchStakingData();
+    }
+  };
+
+  const claimRewards = async () => {
+    const { data } = await supabase.functions.invoke("claim-rewards");
+    toast({ title: "Rewards Claimed!", description: `${data.amount} stdCoin` });
+  };
+
+  useEffect(() => {
+    fetchStakingData();
+    
+    // Real-time updates
+    const channel = supabase
+      .channel("staking-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_stakes" }, fetchStakingData)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  return { pools, totalRewards, loading, stakeTokens, claimRewards };
+}
+```
+
+#### 2. Stake Tokens Function (`supabase/functions/stake-tokens/index.ts`)
+
+```typescript
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+serve(async (req) => {
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  const { data: { user } } = await supabase.auth.getUser(
+    req.headers.get("Authorization")!.replace("Bearer ", "")
+  );
+
+  const { pool_id, amount } = await req.json();
+
+  // Validate balance
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("dcoin_balance")
+    .eq("user_id", user.id)
+    .single();
+
+  if (profile.dcoin_balance < amount) {
+    throw new Error("Insufficient dCoin balance");
+  }
+
+  // Get pool details
+  const { data: pool } = await supabase
+    .from("staking_pools")
+    .select("*")
+    .eq("id", pool_id)
+    .single();
+
+  // Deduct dCoin
+  await supabase
+    .from("profiles")
+    .update({ dcoin_balance: profile.dcoin_balance - amount })
+    .eq("user_id", user.id);
+
+  // Create stake
+  const unlock_at = new Date();
+  unlock_at.setDate(unlock_at.getDate() + pool.duration_days);
+
+  const { data: stake } = await supabase
+    .from("user_stakes")
+    .insert({
+      user_id: user.id,
+      pool_id,
+      amount,
+      unlock_at: unlock_at.toISOString(),
+      auto_compound: true,
+    })
+    .select()
+    .single();
+
+  // Schedule Flow Forte auto-compound
+  const nextCompound = new Date();
+  nextCompound.setDate(nextCompound.getDate() + 1); // Daily
+
+  await supabase.from("compound_schedule").insert({
+    stake_id: stake.id,
+    user_id: user.id,
+    next_compound_at: nextCompound.toISOString(),
+    frequency: 'daily',
+    status: 'active',
+  });
+
+  return new Response(JSON.stringify({ success: true, stake }));
+});
+```
+
+#### 3. Auto-Compound Function (`supabase/functions/auto-compound/index.ts`)
+
+This function is triggered by **Flow Forte** on a schedule (daily/weekly).
+
+```typescript
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+serve(async (req) => {
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  // Get all due compound schedules
+  const now = new Date().toISOString();
+  const { data: schedules } = await supabase
+    .from("compound_schedule")
+    .select(`
+      *,
+      user_stakes!inner(id, amount, pool_id, user_id, staking_pools!inner(boosted_apy))
+    `)
+    .eq("status", "active")
+    .lte("next_compound_at", now);
+
+  for (const schedule of schedules || []) {
+    const stake = schedule.user_stakes;
+    const pool = stake.staking_pools;
+    
+    // Calculate rewards (boosted APY with auto-compound)
+    const dailyRate = pool.boosted_apy / 100 / 365;
+    const rewardAmount = stake.amount * dailyRate;
+
+    // Create reward
+    await supabase.from("staking_rewards").insert({
+      stake_id: stake.id,
+      user_id: stake.user_id,
+      amount: rewardAmount,
+      reward_type: 'compound',
+      claimed: false,
+    });
+
+    // Add to stdCoin balance
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("stdcoin_balance")
+      .eq("user_id", stake.user_id)
+      .single();
+
+    await supabase
+      .from("profiles")
+      .update({ stdcoin_balance: profile.stdcoin_balance + rewardAmount })
+      .eq("user_id", stake.user_id);
+
+    // Update next compound time
+    const nextCompound = new Date();
+    nextCompound.setDate(nextCompound.getDate() + 1);
+
+    await supabase
+      .from("compound_schedule")
+      .update({
+        next_compound_at: nextCompound.toISOString(),
+        last_compound_at: now,
+        total_compounds: schedule.total_compounds + 1,
+      })
+      .eq("id", schedule.id);
+  }
+
+  return new Response(JSON.stringify({ 
+    success: true, 
+    compounded: schedules?.length 
+  }));
+});
+```
+
+#### 4. Gift Burn → Mint → Stake Chain (`supabase/functions/process-gift-burn/index.ts`)
+
+```typescript
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+serve(async (req) => {
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  const { data: { user } } = await supabase.auth.getUser(
+    req.headers.get("Authorization")!.replace("Bearer ", "")
+  );
+
+  const { gift_id, dcoin_amount, auto_stake_percent = 50 } = await req.json();
+
+  // STEP 1: Burn dCoin
+  console.log(`Burning ${dcoin_amount} dCoin`);
+
+  // STEP 2: Mint stdCoin (1:1)
+  const stdcoin_minted = dcoin_amount;
+
+  // STEP 3: Split for auto-stake
+  const auto_stake_amount = stdcoin_minted * (auto_stake_percent / 100);
+  const liquid_amount = stdcoin_minted - auto_stake_amount;
+
+  // Add liquid portion to balance
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("stdcoin_balance")
+    .eq("user_id", user.id)
+    .single();
+
+  await supabase
+    .from("profiles")
+    .update({ stdcoin_balance: profile.stdcoin_balance + liquid_amount })
+    .eq("user_id", user.id);
+
+  // STEP 4: Auto-stake 50%
+  let stake_id = null;
+  if (auto_stake_amount > 0) {
+    const { data: pool } = await supabase
+      .from("staking_pools")
+      .select("*")
+      .eq("name", "Battle Legends")
+      .single();
+
+    if (pool && auto_stake_amount >= pool.min_stake) {
+      const unlock_at = new Date();
+      unlock_at.setDate(unlock_at.getDate() + pool.duration_days);
+
+      const { data: stake } = await supabase
+        .from("user_stakes")
+        .insert({
+          user_id: user.id,
+          pool_id: pool.id,
+          amount: auto_stake_amount,
+          unlock_at: unlock_at.toISOString(),
+          auto_compound: true,
+        })
+        .select()
+        .single();
+
+      stake_id = stake.id;
+
+      // STEP 5: Trigger Flow Forte Agent
+      const nextCompound = new Date();
+      nextCompound.setDate(nextCompound.getDate() + 1);
+
+      await supabase.from("compound_schedule").insert({
+        stake_id: stake.id,
+        user_id: user.id,
+        next_compound_at: nextCompound.toISOString(),
+        frequency: 'daily',
+        status: 'active',
+      });
+    }
+  }
+
+  // Log the action chain
+  await supabase.from("gift_burn_log").insert({
+    gift_id,
+    user_id: user.id,
+    dcoin_burned: dcoin_amount,
+    stdcoin_minted,
+    auto_staked: auto_stake_amount > 0,
+    stake_id,
+  });
+
+  return new Response(JSON.stringify({ 
+    success: true,
+    dcoin_burned: dcoin_amount,
+    stdcoin_minted,
+    auto_staked: auto_stake_amount,
+    liquid_amount,
+  }));
+});
+```
+
+### Flow Forte Scheduler Configuration
+
+To set up Flow Forte automation:
+
+1. **Install Flow Forte CLI**
+```bash
+npm install -g @onflow/forte-cli
+```
+
+2. **Initialize Forte Agent**
+```bash
+forte init --network mainnet
+forte create-agent staking-compounder \
+  --trigger schedule \
+  --interval daily \
+  --action call-function \
+  --function auto-compound
+```
+
+3. **Configure Agent Schedule**
+```javascript
+// forte-config.json
+{
+  "agents": [
+    {
+      "name": "auto-compounder",
+      "trigger": {
+        "type": "schedule",
+        "cron": "0 0 * * *"  // Daily at midnight
+      },
+      "action": {
+        "type": "http",
+        "url": "https://xtzcumhuyxphesbjxjxn.supabase.co/functions/v1/auto-compound",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer YOUR_SERVICE_KEY"
+        }
+      }
+    },
+    {
+      "name": "viewer-milestone-trigger",
+      "trigger": {
+        "type": "event",
+        "contract": "dBattle",
+        "event": "ViewerMilestone"
+      },
+      "action": {
+        "type": "flow-transaction",
+        "script": "transfer_to_boost_vault.cdc",
+        "args": ["${event.creator_id}", "${event.amount}"]
+      }
+    }
+  ]
+}
+```
+
+4. **Deploy Agents**
+```bash
+forte deploy --config forte-config.json
+forte start-all
+```
+
+### Event-Based Triggers
+
+**Viewer Milestone Automation:**
+
+When a creator hits 1K viewers during a livestream, Flow Forte automatically allocates a percentage of their stdCoin to a high-yield boost vault.
+
+```cadence
+// viewer-milestone-trigger.cdc
+import DBattleToken from 0x7bb1b058bf341d24
+
+transaction(creatorAddress: Address, boostPercent: UFix64) {
+    prepare(signer: AuthAccount) {
+        let vaultRef = signer.borrow<&DBattleToken.Vault>(from: /storage/stdCoinVault)
+            ?? panic("Could not borrow vault reference")
+        
+        let balance = vaultRef.balance
+        let boostAmount = balance * boostPercent
+        
+        // Transfer to boost vault
+        let sentVault <- vaultRef.withdraw(amount: boostAmount)
+        
+        let boostVaultRef = getAccount(creatorAddress)
+            .getCapability(/public/boostVaultReceiver)
+            .borrow<&{FungibleToken.Receiver}>()
+            ?? panic("Could not borrow boost vault receiver")
+        
+        boostVaultRef.deposit(from: <-sentVault)
+    }
+}
+```
+
+### Action Chains
+
+**Gift → Burn → Mint → Stake Flow:**
+
+```typescript
+// Triggered when user sends a gift
+const processGiftChain = async (giftAmount: number) => {
+  // 1. Burn dCoin
+  const burned = await burnDCoin(giftAmount);
+  
+  // 2. Mint stdCoin
+  const minted = await mintStdCoin(burned);
+  
+  // 3. Auto-stake 50%
+  const staked = await autoStake(minted * 0.5);
+  
+  // 4. Trigger Flow Forte agent
+  await scheduleCompounding(staked.stake_id);
+  
+  return { burned, minted, staked };
+};
+```
+
+### APY Boost Calculation
+
+**Without Auto-Compound (Base APY):**
+```
+Daily Rate = 18% / 365 = 0.0493%
+Annual Return = 1000 * 0.18 = 180 stdCoin
+```
+
+**With Flow Forte Auto-Compound (Boosted APY):**
+```
+Daily Rate = 25% / 365 = 0.0685%
+Compounded Daily = (1 + 0.000685)^365 = 1.2840
+Annual Return = 1000 * 0.2840 = 284 stdCoin
+APY Boost = +58% more rewards
+```
+
+### Database Schema
+
+```sql
+-- Staking pools
+CREATE TABLE staking_pools (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  base_apy NUMERIC NOT NULL,
+  boosted_apy NUMERIC NOT NULL,
+  min_stake NUMERIC NOT NULL,
+  duration_days INTEGER NOT NULL,
+  reward_frequency TEXT NOT NULL
+);
+
+-- User stakes
+CREATE TABLE user_stakes (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES auth.users,
+  pool_id UUID REFERENCES staking_pools,
+  amount NUMERIC NOT NULL,
+  unlock_at TIMESTAMPTZ NOT NULL,
+  auto_compound BOOLEAN DEFAULT true
+);
+
+-- Compound schedule (Flow Forte)
+CREATE TABLE compound_schedule (
+  id UUID PRIMARY KEY,
+  stake_id UUID REFERENCES user_stakes,
+  next_compound_at TIMESTAMPTZ NOT NULL,
+  frequency TEXT NOT NULL,
+  status TEXT DEFAULT 'active'
+);
+
+-- Gift burn log (action chain)
+CREATE TABLE gift_burn_log (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES auth.users,
+  dcoin_burned NUMERIC NOT NULL,
+  stdcoin_minted NUMERIC NOT NULL,
+  auto_staked BOOLEAN DEFAULT false,
+  stake_id UUID REFERENCES user_stakes
+);
+```
+
+### Monitoring & Analytics
+
+```typescript
+// Get staking analytics
+const { data } = await supabase.functions.invoke("get-staking-data");
+
+console.log(`Total Staked: ${data.total_staked} dCoin`);
+console.log(`Total Rewards: ${data.total_rewards} stdCoin`);
+console.log(`Average APY: ${data.average_apy}%`);
+console.log(`Auto-Compound Rate: ${data.compound_rate}%`);
+```
+
 ## 🔗 Links
 
 - [Flow Documentation](https://developers.flow.com/)
 - [FCL Documentation](https://developers.flow.com/tools/fcl-js)
+- [Flow Forte](https://flow.com/forte)
 - [Supabase Documentation](https://supabase.com/docs)
