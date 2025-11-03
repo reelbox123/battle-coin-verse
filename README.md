@@ -34,6 +34,7 @@ npm run dev
 ### Contract Address
 - **Token Contract**: `0x7bb1b058bf341d24`
 - **Network**: Flow Mainnet
+- https://testnet.flowscan.io/tx/f6e1abcf88bd1cd810519a9ab2ff229098eb3b2f5d945915d7deb8cac9a73d65
 
 ### Integration Code
 
